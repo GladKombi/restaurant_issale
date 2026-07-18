@@ -51,7 +51,7 @@
 <!-- Navbar simplifiée -->
 <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="index.html">
+        <a class="navbar-brand" href="index.php">
             ISSALE
             <span class="brand-sub">Restaurant</span>
         </a>
@@ -67,8 +67,8 @@
                     <div class="success-icon">
                         <i class="bi bi-check-circle-fill"></i>
                     </div>
-                    <h1 class="font-playfair display-6 mt-3">Commande confirmée !</h1>
-                    <p class="text-muted">Votre commande a été envoyée à la cuisine</p>
+                    <h1 class="font-playfair display-6 mt-3">Commande enregistrée !</h1>
+                    <p class="text-muted">Votre commande a été transmise au restaurant</p>
                 </div>
                 
                 <div class="order-card">
@@ -92,7 +92,7 @@
                     
                     <div class="mt-3">
                         <span class="badge bg-warning text-dark p-2">
-                            <i class="bi bi-clock me-1"></i>En préparation
+                            <i class="bi bi-clock me-1"></i>En attente de confirmation
                         </span>
                         <span class="badge bg-light text-dark p-2 ms-2">
                             <i class="bi bi-truck me-1"></i><span id="orderType">Sur place</span>
@@ -101,10 +101,7 @@
                 </div>
                 
                 <div class="d-grid gap-3 mt-4">
-                    <a href="order-tracking.html?id=IS-5123" class="btn btn-primary-custom">
-                        <i class="bi bi-graph-up-arrow me-2"></i>Suivre ma commande
-                    </a>
-                    <a href="menu.html" class="btn btn-outline-secondary">
+                    <a href="menu.php" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-2"></i>Voir le menu
                     </a>
                 </div>

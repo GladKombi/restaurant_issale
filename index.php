@@ -181,7 +181,7 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="index.html">
+        <a class="navbar-brand" href="index.php">
             ISSALE
             <span class="brand-sub">Restaurant</span>
         </a>
@@ -191,13 +191,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
                 <li class="nav-item">
-                    <a class="nav-link active" href="index.html">Accueil</a>
+                    <a class="nav-link active" href="index.php">Accueil</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="menu.html">Menu</a>
+                    <a class="nav-link" href="menu.php">Menu</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link position-relative" href="cart.html">
+                    <a class="nav-link position-relative" href="Panier%20-%20cart.php">
                         <i class="bi bi-cart3 fs-5"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCount">
                             0
@@ -210,7 +210,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="menu.html" class="btn btn-primary-custom ms-lg-3">
+                    <a href="menu.php" class="btn btn-primary-custom ms-lg-3">
                         Commander
                     </a>
                 </li>
@@ -234,7 +234,7 @@
                     Scannez le QR code ou parcourez notre menu pour commander en quelques secondes
                 </p>
                 <div class="d-flex flex-wrap justify-content-center gap-3">
-                    <a href="menu.html" class="btn btn-primary-custom btn-lg">
+                    <a href="menu.php" class="btn btn-primary-custom btn-lg">
                         <i class="bi bi-menu-button-wide me-2"></i>Voir le menu
                     </a>
                     <button class="btn btn-outline-light-custom btn-lg" data-bs-toggle="modal" data-bs-target="#qrModal">
@@ -255,7 +255,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-body text-center p-5">
-                <i class="bi bi-qr-code" style="font-size: 8rem; color: var(--primary);"></i>
+                <div id="restaurantQrCode" class="d-flex justify-content-center"></div>
                 <h4 class="mt-4">Scannez le QR Code</h4>
                 <p class="text-muted">Placez votre téléphone devant le QR code pour accéder au menu</p>
                 <button class="btn btn-primary-custom" data-bs-dismiss="modal">Fermer</button>
@@ -432,5 +432,16 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    new QRCode(document.getElementById('restaurantQrCode'), {
+        text: new URL('menu.php', window.location.href).href,
+        width: 220,
+        height: 220,
+        colorDark: '#1A120E',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+</script>
 </body>
 </html>

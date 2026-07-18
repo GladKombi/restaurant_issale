@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/config/database.php';
+$activeTables = fetchAll("SELECT id, number, capacity FROM tables WHERE supprimer=0 AND is_active=1 ORDER BY number");
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -99,21 +103,40 @@
             margin: 16px 0;
         }
         
-        .order-type-selector .btn-check:checked+.btn {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+        .order-type-selector .btn-check:checked + .btn {
+            background: #8B1A1A !important;
+            color: #ffffff !important;
+            border-color: #8B1A1A !important;
+            box-shadow: 0 0 0 3px rgba(139, 26, 26, 0.15);
         }
         
         .order-type-selector .btn {
+            flex: 1;
             padding: 10px 24px;
             border-radius: 12px;
-            border: 2px solid #dee2e6;
+            border: 2px solid #8B1A1A !important;
+            background: #ffffff !important;
+            color: #5C0E0E !important;
+            font-weight: 600;
             transition: all 0.3s ease;
         }
         
         .order-type-selector .btn:hover {
-            border-color: var(--primary);
+            background: #FDF0F0 !important;
+            border-color: #5C0E0E !important;
+        }
+
+        .order-type-selector .btn-check:checked + .btn:hover {
+            background: #5C0E0E !important;
+            color: #ffffff !important;
+        }
+        #checkoutButton {
+            border: 2px solid #5C0E0E;
+        }
+
+        #checkoutButton:hover,
+        #checkoutButton:focus {
+            border-color: #D4A373;
         }
     </style>
 </head>
@@ -122,7 +145,7 @@
 <!-- Navbar (identique) -->
 <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="index.html">
+        <a class="navbar-brand" href="index.php">
             ISSALE
             <span class="brand-sub">Restaurant</span>
         </a>
@@ -132,13 +155,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.html">Accueil</a>
+                    <a class="nav-link" href="index.php">Accueil</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="menu.html">Menu</a>
+                    <a class="nav-link" href="menu.php">Menu</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active position-relative" href="cart.html">
+                    <a class="nav-link active position-relative" href="Panier%20-%20cart.php">
                         <i class="bi bi-cart3 fs-5"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCount">
                             0
@@ -228,7 +251,7 @@
                     <i class="bi bi-cart3"></i>
                     <h4 class="mt-3">Votre panier est vide</h4>
                     <p class="text-muted">Parcourez notre menu et ajoutez vos plats préférés</p>
-                    <a href="menu.html" class="btn btn-primary-custom mt-3">
+                    <a href="menu.php" class="btn btn-primary-custom mt-3">
                         <i class="bi bi-arrow-left me-2"></i>Voir le menu
                     </a>
                 </div>
@@ -297,17 +320,32 @@
                         <i class="bi bi-building me-1"></i>Sur place
                     </label>
                     
-                    <input type="radio" class="btn-check" name="orderType" id="emporter" value="emporter">
+                    <input type="radio" class="btn-check" name="orderType" id="emporter" value="a emporter">
                     <label class="btn btn-outline-secondary" for="emporter">
                         <i class="bi bi-box-seam me-1"></i>À emporter
                     </label>
                 </div>
             </div>
+
+            <div class="mt-3">
+                <label for="orderTable" class="form-label fw-bold">Table *</label>
+                <select class="form-select" id="orderTable" required>
+                    <option value="">Sélectionner une table</option>
+                    <?php foreach ($activeTables as $table): ?>
+                    <option value="<?= (int)$table->id ?>"><?= htmlspecialchars($table->number, ENT_QUOTES, 'UTF-8') ?> — <?= (int)$table->capacity ?> places</option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="mt-3">
+                <label for="orderNotes" class="form-label fw-bold">Instructions</label>
+                <textarea class="form-control" id="orderNotes" rows="2" placeholder="Cuisson, allergies, demandes particulières…"></textarea>
+            </div>
             
-            <button class="btn btn-primary-custom w-100 mt-3" onclick="validateOrder()">
+            <button class="btn btn-primary-custom w-100 mt-3" id="checkoutButton" onclick="validateOrder()">
                 <i class="bi bi-check2-circle me-2"></i>Valider la commande
             </button>
-            <a href="menu.html" class="btn btn-link w-100 mt-2">
+            <a href="menu.php" class="btn btn-link w-100 mt-2">
                 <i class="bi bi-arrow-left me-2"></i>Continuer le menu
             </a>
         `;
@@ -339,32 +377,43 @@
         showToast('Article retiré du panier');
     }
 
-    function validateOrder() {
+    async function validateOrder() {
         if (cart.length === 0) {
             alert('Votre panier est vide !');
             return;
         }
         
+        const tableId = document.getElementById('orderTable').value;
+        if (!tableId) {
+            showToast('Veuillez sélectionner une table.');
+            return;
+        }
         const orderType = document.querySelector('input[name="orderType"]:checked');
         const type = orderType ? orderType.value : 'surplace';
-        
-        // Simulation de validation
-        const orderNumber = 'IS-' + Math.floor(Math.random() * 9000 + 1000);
-        
-        // Sauvegarder la commande
-        const order = {
-            id: orderNumber,
-            items: cart,
-            total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-            type: type,
-            date: new Date().toISOString(),
-            status: 'confirmee'
-        };
-        
-        localStorage.setItem('issaleOrder', JSON.stringify(order));
-        
-        // Rediriger vers la confirmation
-        window.location.href = 'order-success.html?id=' + orderNumber;
+        const button = document.getElementById('checkoutButton');
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Envoi…';
+        try {
+            const response = await fetch('models/traitement/client-orders.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    table_id: Number(tableId),
+                    order_type: type,
+                    notes: document.getElementById('orderNotes').value,
+                    items: cart.map(item => ({id: item.id, quantity: item.quantity}))
+                })
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message);
+            const order = {id: result.order_number, items: cart, total: result.total, type, date: new Date().toISOString(), status: 'en attente'};
+            localStorage.setItem('issaleOrder', JSON.stringify(order));
+            window.location.href = 'order-success.php?id=' + encodeURIComponent(result.order_number);
+        } catch (error) {
+            showToast(error.message || 'Impossible d’envoyer la commande.');
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Valider la commande';
+        }
     }
 
     function showToast(message) {
@@ -385,7 +434,15 @@
     }
 
     // Charger le panier au chargement
-    document.addEventListener('DOMContentLoaded', renderCart);
+    document.addEventListener('DOMContentLoaded', function () {
+        renderCart();
+        const context = JSON.parse(localStorage.getItem('issaleTableContext') || 'null');
+        const tableSelect = document.getElementById('orderTable');
+        if (context && tableSelect && tableSelect.querySelector(`option[value="${context.id}"]`)) {
+            tableSelect.value = String(context.id);
+            tableSelect.closest('.mt-3').insertAdjacentHTML('afterbegin', `<div class="alert alert-success py-2 mb-2"><i class="bi bi-qr-code-scan me-2"></i>Table ${context.number} détectée automatiquement</div>`);
+        }
+    });
 </script>
 </body>
 </html>

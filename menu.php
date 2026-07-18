@@ -1,3 +1,21 @@
+<?php
+require_once __DIR__ . '/config/database.php';
+$menuCategories = fetchAll('SELECT id, nom FROM categories WHERE supprimer = 0 ORDER BY nom');
+$menuItems = fetchAll('SELECT id, nom, description, price, image, category_id, stock_quantity FROM menus WHERE supprimer = 0 AND is_available = 1 ORDER BY display_order, nom');
+$productsData = array_map(static fn($item) => [
+    'id'=>(int)$item->id, 'name'=>$item->nom,
+    'description'=>$item->description ?: 'Découvrez ce plat préparé par notre équipe.',
+    'price'=>(float)$item->price, 'category'=>(string)$item->category_id,
+    'image'=>$item->image ?: 'data:image/svg+xml;charset=UTF-8,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#F0E6DC"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#8B1A1A" font-family="sans-serif" font-size="28">ISSALE Restaurant</text></svg>'),
+    'tags'=>[], 'allergens'=>[], 'stock'=>(int)$item->stock_quantity
+], $menuItems);
+$tableContext = null;
+$requestedTable = trim($_GET['table'] ?? '');
+$requestedToken = trim($_GET['token'] ?? '');
+if ($requestedTable !== '' && $requestedToken !== '') {
+    $tableContext = fetchOne('SELECT id, number FROM tables WHERE number=:number AND qr_code_token=:token AND supprimer=0 AND is_active=1', [':number'=>$requestedTable, ':token'=>$requestedToken]);
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -164,6 +182,10 @@
             font-size: 1.5rem;
             color: var(--success);
         }
+
+        .cart-dock { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1040; display: none; min-width: 290px; }
+        .cart-dock a { display: flex; justify-content: space-between; align-items: center; padding: 13px 18px; border-radius: 14px; background: var(--primary); color: #fff; text-decoration: none; box-shadow: 0 10px 30px rgba(92,14,14,.3); }
+        .table-context { background: #fff7ea; border: 1px solid #ead0aa; border-radius: 12px; padding: 12px 16px; color: #6f4614; }
     </style>
 </head>
 <body>
@@ -171,7 +193,7 @@
 <!-- Navbar (identique) -->
 <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="index.html">
+        <a class="navbar-brand" href="index.php">
             ISSALE
             <span class="brand-sub">Restaurant</span>
         </a>
@@ -181,13 +203,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.html">Accueil</a>
+                    <a class="nav-link" href="index.php">Accueil</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="menu.html">Menu</a>
+                    <a class="nav-link active" href="menu.php">Menu</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link position-relative" href="cart.html">
+                    <a class="nav-link position-relative" href="Panier%20-%20cart.php">
                         <i class="bi bi-cart3 fs-5"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCount">
                             0
@@ -195,7 +217,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="cart.html" class="btn btn-primary-custom ms-lg-3">
+                    <a href="Panier%20-%20cart.php" class="btn btn-primary-custom ms-lg-3">
                         <i class="bi bi-bag-check me-2"></i>Panier
                     </a>
                 </li>
@@ -220,6 +242,11 @@
                 </div>
             </div>
         </div>
+        <?php if ($tableContext): ?>
+        <div class="table-context mb-4"><i class="bi bi-qr-code-scan me-2"></i>Vous commandez pour la <strong>table <?= htmlspecialchars($tableContext->number, ENT_QUOTES, 'UTF-8') ?></strong>.</div>
+        <?php elseif ($requestedTable !== '' || $requestedToken !== ''): ?>
+        <div class="alert alert-warning mb-4"><i class="bi bi-exclamation-triangle me-2"></i>Ce QR code n’est plus valide. Vous pourrez sélectionner votre table dans le panier.</div>
+        <?php endif; ?>
         
         <!-- Catégories Tabs -->
         <div class="category-tabs mb-4">
@@ -227,24 +254,11 @@
                 <li class="nav-item">
                     <a class="nav-link active" data-category="all">Tous</a>
                 </li>
+                <?php foreach ($menuCategories as $category): ?>
                 <li class="nav-item">
-                    <a class="nav-link" data-category="entrees">Entrées</a>
+                    <a class="nav-link" href="#" data-category="<?= (int)$category->id ?>"><?= htmlspecialchars($category->nom, ENT_QUOTES, 'UTF-8') ?></a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-category="plats">Plats</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-category="pizzas">Pizzas</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-category="desserts">Desserts</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-category="boissons">Boissons</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-category="cocktails">Cocktails</a>
-                </li>
+                <?php endforeach; ?>
             </ul>
         </div>
         
@@ -256,6 +270,7 @@
 </section>
 
 <!-- Toast Container -->
+<div class="cart-dock" id="cartDock"><a href="Panier%20-%20cart.php"><span><i class="bi bi-bag me-2"></i>Voir mon panier</span><strong id="cartDockTotal">0 FC</strong></a></div>
 <div class="toast-container">
     <div id="notificationToast" class="toast toast-custom" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-body">
@@ -347,7 +362,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Données produits de démonstration
-    const products = [
+    const demoProducts = [
         {
             id: 1,
             name: "Burger Royal",
@@ -430,8 +445,12 @@
         }
     ];
 
+    const products = <?= json_encode($productsData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+
     // State
     let cart = JSON.parse(localStorage.getItem('issaleCart')) || [];
+    const scannedTable = <?= json_encode($tableContext ? ['id'=>(int)$tableContext->id, 'number'=>$tableContext->number] : null, JSON_UNESCAPED_UNICODE) ?>;
+    if (scannedTable) localStorage.setItem('issaleTableContext', JSON.stringify(scannedTable));
     let currentProductId = null;
 
     // Fonctions
@@ -517,6 +536,9 @@
         const count = cart.reduce((sum, item) => sum + item.quantity, 0);
         document.getElementById('cartCount').textContent = count;
         document.getElementById('cartCount').style.display = count > 0 ? 'block' : 'none';
+        const dock = document.getElementById('cartDock');
+        dock.style.display = count > 0 ? 'block' : 'none';
+        document.getElementById('cartDockTotal').textContent = cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString() + ' FC';
     }
 
     function showToast(message, type = 'success') {
