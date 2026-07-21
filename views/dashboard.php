@@ -780,7 +780,7 @@ $adminName = trim(($_SESSION['user_nom'] ?? 'Administrateur') . ' ' . ($_SESSION
     <!-- ============================================
 SIDEBAR
 ============================================ -->
-    <aside class="admin-sidebar" id="adminSidebar">
+    <aside class="admin-sidebar" id="adminSidebar" data-role="<?= e($_SESSION['user_type'] ?? '') ?>">
         <div class="brand">
             <h3>ISSALE</h3>
             <small>Administration</small>
@@ -1393,7 +1393,7 @@ MODALS
         };
     </script>
 
-<script src="../assets/js/sidebar-sync.js"></script>
+<script src="../assets/js/sidebar-sync.js?v=3"></script>
 </body>
 
 </html>

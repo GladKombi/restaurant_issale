@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 header('Content-Type: application/json; charset=utf-8');
-if (empty($_SESSION['is_logged_in']) || !in_array($_SESSION['user_type'] ?? '', ['admin','gestionnaire'], true)) {
+if (empty($_SESSION['is_logged_in']) || !in_array($_SESSION['user_type'] ?? '', ['admin','gestionnaire','cuisinier'], true)) {
     echo json_encode(['success'=>false,'message'=>'Accès non autorisé'], JSON_UNESCAPED_UNICODE); exit;
 }
 require_once __DIR__ . '/../../config/database.php';

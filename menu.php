@@ -155,6 +155,9 @@ if ($requestedTable !== '' && $requestedToken !== '') {
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        .stock-out { background: #fce8e8; color: #8B1A1A; font-size: .72rem; font-weight: 600; padding: 5px 9px; border-radius: 20px; }
+        .product-card.out-of-stock .product-image img { filter: grayscale(.7); opacity: .65; }
         
         /* Toast notification */
         .toast-container {
@@ -483,7 +486,7 @@ if ($requestedTable !== '' && $requestedToken !== '') {
 
         grid.innerHTML = filtered.map(product => `
             <div class="col-lg-3 col-md-4 col-6">
-                <div class="product-card" data-product-id="${product.id}">
+                <div class="product-card ${product.stock <= 0 ? 'out-of-stock' : ''}" data-product-id="${product.id}">
                     <div class="product-image">
                         <img src="${product.image}" alt="${product.name}" loading="lazy">
                         ${product.tags && product.tags.includes('populaire') ? 
@@ -496,9 +499,9 @@ if ($requestedTable !== '' && $requestedToken !== '') {
                         <p class="product-description">${product.description}</p>
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <span class="product-price">${product.price.toLocaleString()} FC</span>
-                            <button class="btn-add-cart" onclick="addToCart(${product.id})">
-                                <i class="bi bi-plus-lg"></i>
-                            </button>
+                            ${product.stock <= 0
+                                ? '<span class="stock-out">Rupture de stock</span>'
+                                : `<button class="btn-add-cart" onclick="addToCart(${product.id})"><i class="bi bi-plus-lg"></i></button>`}
                         </div>
                     </div>
                 </div>
@@ -521,6 +524,15 @@ if ($requestedTable !== '' && $requestedToken !== '') {
         if (!product) return;
 
         const existing = cart.find(item => item.id === productId);
+        const currentQuantity = existing ? existing.quantity : 0;
+        if (product.stock <= 0) {
+            showToast(`${product.name} est en rupture de stock.`, 'error');
+            return false;
+        }
+        if (currentQuantity >= product.stock) {
+            showToast(`Stock maximum atteint pour ${product.name} (${product.stock}).`, 'error');
+            return false;
+        }
         if (existing) {
             existing.quantity += 1;
         } else {
@@ -530,6 +542,7 @@ if ($requestedTable !== '' && $requestedToken !== '') {
         localStorage.setItem('issaleCart', JSON.stringify(cart));
         updateCartCount();
         showToast(`${product.name} ajouté au panier !`, 'success');
+        return true;
     }
 
     function updateCartCount() {
@@ -571,6 +584,13 @@ if ($requestedTable !== '' && $requestedToken !== '') {
         document.getElementById('modalDescription').textContent = product.description;
         document.getElementById('modalPrice').textContent = `${product.price.toLocaleString()} FC`;
         document.getElementById('modalQuantity').value = 1;
+        document.getElementById('modalQuantity').disabled = product.stock <= 0;
+        document.getElementById('incrementQty').disabled = product.stock <= 0;
+        const modalAddButton = document.getElementById('addToCartModal');
+        modalAddButton.disabled = product.stock <= 0;
+        modalAddButton.innerHTML = product.stock <= 0
+            ? '<i class="bi bi-x-circle me-2"></i>Rupture de stock'
+            : '<i class="bi bi-bag-plus me-2"></i>Ajouter au panier';
         
         // Tags
         const tagsContainer = document.getElementById('modalTags');
@@ -622,16 +642,22 @@ if ($requestedTable !== '' && $requestedToken !== '') {
         document.getElementById('incrementQty').addEventListener('click', function() {
             const input = document.getElementById('modalQuantity');
             let val = parseInt(input.value);
-            input.value = val + 1;
+            const product = products.find(p => p.id === currentProductId);
+            if (product && val < product.stock) input.value = val + 1;
         });
 
         document.getElementById('addToCartModal').addEventListener('click', function() {
             const quantity = parseInt(document.getElementById('modalQuantity').value);
             const product = products.find(p => p.id === currentProductId);
             if (product) {
-                for (let i = 0; i < quantity; i++) {
-                    addToCart(currentProductId);
+                const existing = cart.find(item => item.id === currentProductId);
+                const available = product.stock - (existing ? existing.quantity : 0);
+                if (product.stock <= 0 || available <= 0) {
+                    showToast(`${product.name} est en rupture ou la quantité disponible est déjà dans votre panier.`, 'error');
+                    return;
                 }
+                const quantityToAdd = Math.min(quantity, available);
+                for (let i = 0; i < quantityToAdd; i++) addToCart(currentProductId);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
                 modal.hide();
             }

@@ -1,7 +1,7 @@
 <?php
 if(session_status()===PHP_SESSION_NONE)session_start();
 if(empty($_SESSION['is_logged_in'])){header('Location: ../connexion.php');exit;}
-if(!in_array($_SESSION['user_type']??'', ['admin','gestionnaire'],true)){header('Location: dashboard.php');exit;}
+if(!in_array($_SESSION['user_type']??'', ['admin','gestionnaire','cuisinier'],true)){header('Location: dashboard.php');exit;}
 require_once __DIR__.'/../config/database.php';
 function mh($v):string{return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
 $menus=fetchAll('SELECT m.*,c.nom category_name FROM menus m JOIN categories c ON c.id=m.category_id WHERE m.supprimer=0 ORDER BY m.created_at DESC,m.id DESC');
@@ -27,4 +27,4 @@ async function saveMenu(e){e.preventDefault();saveBtn.disabled=true;try{const r=
 let menuToDelete=null;function deleteMenu(id,name){menuToDelete=id;deleteMenuName.textContent=name;deleteModal.classList.add('open')}function closeDeleteModal(){deleteModal.classList.remove('open');menuToDelete=null}async function executeDeleteMenu(){if(!menuToDelete)return;confirmDeleteBtn.disabled=true;const id=menuToDelete;try{const r=await fetch('../models/traitement/menus-post.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})}),o=await r.json();toast(o.message);if(o.success){document.getElementById('menu-'+id)?.remove();closeDeleteModal()}}catch(e){toast('Une erreur est survenue.')}finally{confirmDeleteBtn.disabled=false}}
 function filterMenus(){const q=search.value.toLowerCase(),c=categoryFilter.value;document.querySelectorAll('#rows tr[data-search]').forEach(r=>r.style.display=(!q||r.dataset.search.includes(q))&&(!c||r.dataset.category===c)?'':'none')}function toast(msg){document.querySelector('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.append(t);setTimeout(()=>t.remove(),3500)}modal.onclick=e=>{if(e.target===modal)closeMenu()};
 deleteModal.onclick=e=>{if(e.target===deleteModal)closeDeleteModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();closeDeleteModal()}});
-</script><script src="../assets/js/sidebar-sync.js"></script></body></html>
+</script><script src="../assets/js/sidebar-sync.js?v=3"></script></body></html>
